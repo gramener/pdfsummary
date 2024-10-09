@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
     crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" crossorigin="anonymous">
   <style>
     .narrative {
       max-width: 40rem;
@@ -135,9 +136,12 @@ Avoid excessive jargon.</textarea>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" type="module"></script>
   <script src="https://cdn.jsdelivr.net/npm/@gramex/ui@0.3/dist/dark-theme.js" type="module"></script>
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
   <script type="module">
     import * as pdfjs from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4/+esm";
     pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4/build/pdf.worker.min.mjs";
+
+    import markdownIt from 'https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/+esm'
 
     const uploadForm = document.getElementById('pdf-upload-form');
     const pdfFile = document.getElementById('pdf-file');
@@ -174,7 +178,8 @@ Avoid excessive jargon.</textarea>
         });
         const result = await response.json();
         if (result.choices?.[0]?.message?.content) {
-          abstractDisplay.innerHTML = result.choices?.[0]?.message?.content;
+          const md = markdownIt();
+          abstractDisplay.innerHTML = md.renderInline(result.choices?.[0]?.message?.content);
           uploadStatus.innerHTML = '<div class="alert alert-success"><i class="bi-check-circle-fill me-2"></i>Abstract generated successfully!</div>';
         } else if (result.error?.message) {
           throw new Error(result.error?.message);
@@ -184,6 +189,17 @@ Avoid excessive jargon.</textarea>
       } catch (error) {
         uploadStatus.innerHTML = `<div class="alert alert-danger"><i class="bi-exclamation-triangle-fill me-2"></i>${error.message}</div>`;
       }
+    });
+  </script>
+  <script>
+    const quill = new Quill('#abstract-display', {
+      modules: {
+        toolbar: [
+          ['bold', 'italic', 'underline'],
+        ],
+      },
+      placeholder: 'Abstract content...',
+      theme: 'snow', // or 'bubble'
     });
   </script>
 </body>
