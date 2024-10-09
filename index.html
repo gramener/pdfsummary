@@ -4,19 +4,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="https://straive.com/favicon.ico" />
   <title>Abstract Assistant</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
     crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" crossorigin="anonymous">
   <style>
     .narrative {
       max-width: 40rem;
-    }
-
-    textarea {
-      border: none !important;
-      field-sizing: content;
     }
   </style>
 </head>
@@ -50,13 +45,13 @@
 
   <main>
     <div class="container-fluid">
-      <h3 class="display-6">AI-powered PDF Abstract Generation Service</h2>
+      <h3 class="display-6 text-center">AI-powered PDF Abstract Generation Service</h2>
 
         <div class="container mt-5">
           <div class="row">
             <div class="col-12">
               <form id="pdf-upload-form">
-                <div class="row">
+                <div class="row d-flex justify-content-center">
                   <div class="col-4">
                     <input type="file" class="form-control" id="pdf-file" accept=".pdf" />
                   </div>
@@ -79,36 +74,7 @@
                   </h5>
                 </div>
                 <div class="card-body">
-                  <div id="guidelines-display">
-                    <textarea class="form-control" id="guidelines" title="guidelines">You will receive text content from a PDF chapter.
-Your task is to write an abstract for this chapter following these guidelines:
-(1) Begin with a clear and engaging opening sentence in active voice that sets expectations for the chapter. This sentence should succinctly summarize the chapter's main focus and provide a one-sentence overview of what the reader can anticipate.
-(2) If the chapter introduces multiple concepts, summarize each one in the order they appear in the text. Ensure that the presentation is organized and easy to follow, using headings or bullet points if necessary to delineate each concept.
-(3) Summarize the main closing argument presented in the chapter, including its implications as discussed by the author. If the chapter does not contain a designated conclusions section, please omit this part entirely.
-Following the specified guidelines:
-Maximum 150 words.
-Refer to the content as 'Chapter'.
-Use 'this chapter' instead of the chapter title.
-Do not include any additional titles.
-Do not include any graphics, tables, equations, or references.
-Write the abstract as a single paragraph.
-Follow basic US versus UK language consistency and punctuation rules.
-Write concise sentences under 25 words.
-Fully expand abbreviations/acronyms on first use.
-Spell out numbers one to ten.
-Do not start sentences with common conjunctions like 'Because', 'And'.
-Do not use contractions such as 'don't'.
-Do not use 'etc.'.
-'%' need not be spelled out.
-Use the appropriate international abbreviations for all units of measurement when necessary.
-Use sentences as present in the original content.
-Avoid first-person singular and second-person pronouns.
-Use the past tense for findings, experiments, history.
-Use present tense for current ideas and proposals.
-Use future tense for further studies or suggestions.
-Sentences need to be in active voice the extent possible. Do not change sentences that are passive in the original chapter content.
-Avoid repetition by combining similar sentences.
-Avoid excessive jargon.</textarea>
+                  <div id="guidelines-display" class="form-control" style="white-space: pre-line;" contenteditable>
                   </div>
                 </div>
               </div>
@@ -116,12 +82,13 @@ Avoid excessive jargon.</textarea>
             <div class="col-6" style="height: 100%;">
               <div class="card">
                 <div class="card-header">
-                  <h5 class="card-title">
-                    <i class="bi-file-earmark-text me-2"></i>Generated Abstract
+                  <h5 class="card-title d-flex justify-content-between">
+                    <span><i class="bi-file-earmark-text me-2"></i>Generated Abstract</span>
+                    <a class="button" id="abstract-download" title="Download"><i class="bi-download"></i></a>
                   </h5>
                 </div>
                 <div class="card-body">
-                  <div id="abstract-display" contenteditable></div>
+                  <div id="abstract-display" class="form-control" contenteditable><!--white-space: pre-line--></div>
                 </div>
               </div>
             </div>
@@ -136,7 +103,6 @@ Avoid excessive jargon.</textarea>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" type="module"></script>
   <script src="https://cdn.jsdelivr.net/npm/@gramex/ui@0.3/dist/dark-theme.js" type="module"></script>
-  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
   <script type="module">
     import * as pdfjs from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4/+esm";
     pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4/build/pdf.worker.min.mjs";
@@ -147,7 +113,7 @@ Avoid excessive jargon.</textarea>
     const pdfFile = document.getElementById('pdf-file');
     const uploadStatus = document.getElementById('upload-status');
     const abstractDisplay = document.getElementById('abstract-display');
-    const guidelines = document.getElementById('guidelines');
+    const guidelineDisplay = document.getElementById('guidelines-display');
 
     uploadForm.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -157,6 +123,11 @@ Avoid excessive jargon.</textarea>
         if (!file) {
           throw new Error("Please select a PDF file.");
         }
+        let guidelines = guidelineDisplay.innerText ?? guidelineDisplay.value;
+        if (!guidelines || guidelines === undefined || guidelines.length === 0 || guidelines === 'undefined') {
+          throw new Error("Please provide the guidelines.");
+        }
+        sessionStorage.setItem('guidelines', guidelines);
         const pdf = await pdfjs.getDocument(await file.arrayBuffer()).promise;
         const numPages = pdf.numPages;
         let textContent = '';
@@ -171,7 +142,7 @@ Avoid excessive jargon.</textarea>
           body: JSON.stringify({
             model: "gpt-4o-mini",
             messages: [
-              { role: "system", content: "You are an abstract generator." + guidelines.value },
+              { role: "system", content: "You are an abstract generator." + guidelines },
               { role: "user", content: textContent }
             ],
           })
@@ -192,14 +163,27 @@ Avoid excessive jargon.</textarea>
     });
   </script>
   <script>
-    const quill = new Quill('#abstract-display', {
-      modules: {
-        toolbar: [
-          ['bold', 'italic', 'underline'],
-        ],
-      },
-      placeholder: 'Abstract content...',
-      theme: 'snow', // or 'bubble'
+    document.getElementById('abstract-download').addEventListener('click', function () {
+      const abstractDisplay = document.getElementById('abstract-display');
+      const htmlContent = `<html><head><meta charset="UTF-8"><title>Abstract</title></head><body>${abstractDisplay?.innerHTML}</body></html>`;
+      const blob = new Blob([htmlContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'abstract.doc';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    document.addEventListener("DOMContentLoaded", (event) => {
+      let guidelines = sessionStorage.getItem('guidelines');
+      if (!guidelines || guidelines === undefined || guidelines.length === 0 || guidelines === 'undefined') {
+        guidelines = `You will receive text content from a PDF chapter.\nYour task is to write an abstract for this chapter following these guidelines:\n1. Begin with a clear and engaging opening sentence in active voice that sets expectations for the chapter. This sentence should succinctly summarize the chapter's main focus and provide a one-sentence overview of what the reader can anticipate.\n2. If the chapter introduces multiple concepts, summarize each one in the order they appear in the text. Ensure that the presentation is organized and easy to follow, using headings or bullet points if necessary to delineate each concept.\n3. Summarize the main closing argument presented in the chapter, including its implications as discussed by the author. If the chapter does not contain a designated conclusions section, please omit this part entirely.\nFollowing the specified guidelines:\nMaximum 150 words.\nRefer to the content as 'Chapter'.\nUse 'this chapter' instead of the chapter title.\nDo not include any additional titles.\nDo not include any graphics, tables, equations, or references.\nWrite the abstract as a single paragraph.\nFollow basic US versus UK language consistency and punctuation rules.\nWrite concise sentences under 25 words.\nFully expand abbreviations/acronyms on first use.\nSpell out numbers one to ten.\nDo not start sentences with common conjunctions like 'Because', 'And'.\nDo not use contractions such as 'don't'.\nDo not use 'etc.'.\n'%' need not be spelled out.\nUse the appropriate international abbreviations for all units of measurement when necessary.\nUse sentences as present in the original content.\nAvoid first-person singular and second-person pronouns.\nUse the past tense for findings, experiments, history.\nUse present tense for current ideas and proposals.\nUse future tense for further studies or suggestions.\nSentences need to be in active voice the extent possible. Do not change sentences that are passive in the original chapter content.\nAvoid repetition by combining similar sentences.\nAvoid excessive jargon.`;
+      }
+      const guidelineDisplay = document.getElementById('guidelines-display');
+      guidelineDisplay.innerText = guidelines;
     });
   </script>
 </body>
