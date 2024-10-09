@@ -120,7 +120,7 @@ Avoid excessive jargon.</textarea>
                   </h5>
                 </div>
                 <div class="card-body">
-                  <div id="abstract-display"></div>
+                  <div id="abstract-display" contenteditable></div>
                 </div>
               </div>
             </div>
@@ -167,7 +167,7 @@ Avoid excessive jargon.</textarea>
           body: JSON.stringify({
             model: "gpt-4o-mini",
             messages: [
-              { role: "system", content: "You are an abstract generator." + guidelines.innerText },
+              { role: "system", content: "You are an abstract generator." + guidelines.value },
               { role: "user", content: textContent }
             ],
           })
